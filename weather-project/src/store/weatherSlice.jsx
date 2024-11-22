@@ -2,12 +2,21 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 export const fetchWeather = createAsyncThunk(
     'weather/fetchWeather',
-    async (city) => {
-        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=2729426f566773bb8ac0c76a4cfef4ab`);
-        if (!response.ok) {
-            throw new Error("Місто не знайдено");
+    async (city, { rejectWithValue }) => {
+        try {
+            const response = await fetch(
+                `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=YOUR_API_KEY`
+            );
+
+            if (!response.ok) {
+                throw new Error('Місто не знайдено');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.message);
         }
-        return await response.json();
     }
 );
 
@@ -15,7 +24,7 @@ const weatherSlice = createSlice({
     name: 'weather',
     initialState: {
         currentWeather: null,
-        status: 'idle',
+        status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
     },
     reducers: {},
@@ -23,6 +32,7 @@ const weatherSlice = createSlice({
         builder
             .addCase(fetchWeather.pending, (state) => {
                 state.status = 'loading';
+                state.error = null;
             })
             .addCase(fetchWeather.fulfilled, (state, action) => {
                 state.status = 'succeeded';
@@ -30,7 +40,7 @@ const weatherSlice = createSlice({
             })
             .addCase(fetchWeather.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.error.message;
+                state.error = action.payload;
             });
     },
 });
